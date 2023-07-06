@@ -97,6 +97,12 @@ pub enum SATempFunc<F> {
     Boltzmann,
     /// `t_i = t_init * x^i`
     Exponential(F),
+    /// `t_i = t_i-1 - x
+    Linear(F),
+    /// `t_i = t_i-1 * x
+    Geometric(F),
+    /// `t_i = t_i-1 / (1 + (x * t_i))
+    TemperatureSlow(F),
     // /// User-provided temperature function. The first parameter must be the current temperature and
     // /// the second parameter must be the iteration number.
     // Custom(Box<dyn Fn(f64, u64) -> f64 + 'static>),
@@ -395,6 +401,11 @@ where
             SATempFunc::Boltzmann => self.init_temp / F::from_u64(self.temp_iter + 1).unwrap().ln(),
             SATempFunc::Exponential(x) => {
                 self.init_temp * x.powf(F::from_u64(self.temp_iter + 1).unwrap())
+            }
+            SATempFunc::Linear(x) => (self.cur_temp - x).max(F::zero()),
+            SATempFunc::Geometric(x) => (self.cur_temp * x).max(F::zero()),
+            SATempFunc::TemperatureSlow(x) => {
+                (self.cur_temp / (F::one() + (x * self.cur_temp))).max(F::zero())
             }
         };
     }
